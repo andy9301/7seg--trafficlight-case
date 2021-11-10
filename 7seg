@@ -1,0 +1,154 @@
+// 七段控制腳陣列，分別對應a～g段
+const int seg7[] = {12, 11, 10, 9, 8, 7};
+// 四位數掃描端控制腳陣列，對應千、百、十、個位數
+const int scan[] = { A3, A2, A1, A0 };
+
+// 宣告延遲時間的變數名稱，預設為 5 ms
+int delaytime=5;
+// 七節顯示器編碼表
+char TAB[]={ 0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x27,0x7F,0x67,0x00 };
+
+int ii,jj;    // 迴圈用的變數
+int ScanLine=0;
+
+
+const int ledRed=2;
+const int ledYellow=3;
+const int ledGreen=4;
+char flag= '1'; //紅綠燈預設switch為'1'
+char gf= '1'; //7seg預設switch為'1'
+int z=0; //7seg
+int a, b, c, d ,e; //7seg
+int ta, tb, tc, td; //TAB變數
+
+int cda=9; //7seg個
+int cdb=9; //7seg十
+int cdc=9; //7seg百
+int cdd=9; //7seg千
+
+void setup() {
+  pinMode(2,OUTPUT);
+  pinMode(3,OUTPUT);
+  pinMode(4,OUTPUT);
+  // 初始化指定的數位腳位為輸出模式
+  for (ii=0; ii<7; ii++) {
+     pinMode(seg7[ii], OUTPUT);
+  }
+  for (ii=0; ii<4; ii++) {
+     pinMode(scan[ii], OUTPUT);
+     digitalWrite(scan[ii], LOW);  // 掃描端電晶體 OFF
+  }
+  // 設定串列埠的鮑率為 9600 bps
+  Serial.begin(9600);
+}
+
+void loop() { 
+  
+  //紅綠燈控制
+  switch(flag){
+    case '1':
+    digitalWrite(ledRed,LOW);
+    delay(1000);
+    digitalWrite(ledYellow,HIGH);
+    delay(3000);
+    getFor();
+    flag='2';
+
+    
+    case '2':
+    digitalWrite(ledYellow,LOW);
+    delay(1000);
+    digitalWrite(ledGreen,HIGH);
+    delay(3000);
+    getFor();
+    flag='3';
+    
+    case '3':
+    digitalWrite(ledGreen,LOW);
+    delay(1000);
+    digitalWrite(ledRed,HIGH);
+    delay(3000);
+    getFor();
+    flag='1';
+ }
+
+if (Serial.available()) {
+    delaytime=Serial.parseInt();      // 從串列埠緩衝區中讀取下一個有效的整數資料
+    Serial.print(delaytime);          // 在 Serial Monitor 中顯示訊息
+    Serial.println(" ms");            //
+  }
+ 
+  OutPort(TAB[ta]);//千
+  digitalWrite(scan[0], HIGH);  // 指定的掃描端電晶體 ON
+  delay(delaytime);
+  digitalWrite(scan[0], LOW);   // 指定的掃描端電晶體 OFF
+
+  OutPort(TAB[tb]);//百
+  digitalWrite(scan[1], HIGH);  // 指定的掃描端電晶體 ON
+  delay(delaytime);
+  digitalWrite(scan[1], LOW);   // 指定的掃描端電晶體 OFF
+
+  OutPort(TAB[tc]);//十
+  digitalWrite(scan[2], HIGH);  // 指定的掃描端電晶體 ON
+  delay(delaytime);
+  digitalWrite(scan[2], LOW);   // 指定的掃描端電晶體 OFF
+
+  OutPort(TAB[td]);//個
+  digitalWrite(scan[3], HIGH);  // 指定的掃描端電晶體 ON
+  delay(delaytime);
+  digitalWrite(scan[3], LOW);   // 指定的掃描端電晶體 OFF
+}
+
+// 將指定值顯示在七段顯示器上，最低位元為a，依序為 abcdefg
+void OutPort(byte dat) {
+  for (jj=0; jj<7; jj++) {
+    if (dat % 2==1)  // 取出 dat 的最低位元
+      digitalWrite(seg7[jj], HIGH);  // 若為 1 代表該段要亮, 輸出高準位
+    else
+      digitalWrite(seg7[jj], LOW);   // 若為 0 代表該段要滅, 輸出低準位
+    dat=dat/2;  // 除2，進行下一位元的處理
+  }  
+}
+
+void getFor(){ //7seg遞減運算
+  switch(gf){
+    case '1':
+    //一秒钟快闪125次，就等于一秒，
+    //1000/8=125
+    for(e=0;e<125;e++)
+         {
+           flag='2';
+         }
+              
+    case '2':
+    for(d=cda;d>=z;d--)//個
+        {
+          cda=ta;
+          delay(2);
+          flag='3';
+        }
+           
+    case '3':
+    for(c=cdb;c>=z;c--)//十
+      {
+        cdb=tb;
+        delay(2);
+        flag='4';
+      }
+    case '4':
+    for(b=cdc;b>=z;b--)//百
+    {
+        cdc=tc;
+        delay(2);
+        flag='5';
+    }
+    
+    case '5':
+    for(a=cdd;a>=z;a--)//千
+  {
+        cdd=td;
+        delay(2);
+        flag='1';
+  }
+ }
+}
